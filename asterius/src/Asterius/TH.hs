@@ -46,6 +46,9 @@ import TcSplice ()
 import Type.Reflection (Typeable)
 import Prelude hiding ((<>))
 
+instance Show Serialized where
+  show _ = "Serialized"
+
 asteriusConvertAnnotationWrapper
   :: ForeignHValue -> TcM (Either MsgDoc Serialized)
 asteriusConvertAnnotationWrapper fhv = Right <$> asteriusRunTH THAnnWrapper fhv
@@ -104,17 +107,22 @@ runMeta' show_code ppr_hs run_and_convert expr = do
       let expr_span = getLoc expr
       either_tval <-
         tryAllM $ setSrcSpan expr_span $ do
+          liftIO $ putStrLn "[DEBUG] THERE"
           mb_result <- run_and_convert expr_span hval
           case mb_result of
-            Left err -> failWithTc err
+            Left err -> do
+              failWithTc err
             Right result -> do
               traceTc "Got HsSyn result:" (ppr_hs result)
               return $! result
       case either_tval of
         Right v -> return v
-        Left se -> case fromException se of
+        Left se -> do
+         case fromException se of
           Just IOEnvFailure -> failM
-          _ -> fail_with_exn "run" se
+          _ -> do
+            liftIO $ putStrLn $ "[DEBUG] " ++ show se
+            fail_with_exn "run" se
   where
     fail_with_exn :: Exception e => String -> e -> TcM a
     fail_with_exn phase exn = do
@@ -151,8 +159,9 @@ asteriusRunTHType = asteriusRunTH THType
 asteriusRunTHDec :: ForeignHValue -> TcM [TH.Dec]
 asteriusRunTHDec = asteriusRunTH THDec
 
-asteriusRunTH :: Binary a => THResultType -> ForeignHValue -> TcM a
+asteriusRunTH :: (Binary a, Show a) => THResultType -> ForeignHValue -> TcM a
 asteriusRunTH ty fhv = do
+  liftIO $ putStrLn "[INFO] asteriusRunTH"
   hsc_env <- env_top <$> getEnv
   withIServ hsc_env $ \i -> do
     rstate <- getTHState i
@@ -161,7 +170,9 @@ asteriusRunTH ty fhv = do
       $ \q_hv -> writeIServ hsc_env i (RunTH state_hv q_hv ty (Just loc))
     runRemoteTH hsc_env i []
     bs <- readQResult hsc_env i
-    return $! runGet get (LB.fromStrict bs)
+    r <- liftIO $ evaluate $ runGet get (LB.fromStrict bs)
+    liftIO $ putStrLn $ "[INFO] " ++ show r
+    return r
 
 runRemoteTH :: HscEnv -> IServ -> [Messages] -> TcM ()
 runRemoteTH hsc_env iserv recovers = do

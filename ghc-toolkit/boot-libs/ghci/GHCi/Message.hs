@@ -51,6 +51,8 @@ import System.Exit
 import System.IO
 import System.IO.Error
 
+import Asterius.Types
+
 -- -----------------------------------------------------------------------------
 -- The RPC protocol between GHC and the interactive server
 
@@ -509,6 +511,7 @@ remoteCall pipe msg = do
 
 remoteTHCall :: Binary a => Pipe -> THMessage a -> IO a
 remoteTHCall pipe msg = do
+  console_error $ toJSString $ show msg
   writePipe pipe (putTHMessage msg)
   readPipe pipe get
 
@@ -552,3 +555,5 @@ getBin h get leftover = go leftover (runGetIncremental get)
         else go Nothing (fun (Just b))
    go _lft (Fail _rest _off str) =
      throwIO (ErrorCall ("getBin: " ++ str))
+
+foreign import javascript "console.error(${1})" console_error :: JSString -> IO ()
