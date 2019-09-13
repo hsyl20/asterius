@@ -10,6 +10,7 @@ and in active development.
 
 * [Overview](overview.md)
 * [Building guide](building.md)
+* [Execution model](exec_model.md)
 * [Cabal support](cabal.md)
 * [Using ahc-dist/ahc-link](ahc-link.md)
 * [JavaScript FFI](jsffi.md)
