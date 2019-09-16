@@ -1,17 +1,23 @@
-# Memory
+.. _memory:
 
-WebAssembly [allows the allocation of
-Memory objects](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Memory)
+================================================================
+Memory
+================================================================
+
+WebAssembly `allows the allocation of
+Memory objects <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Memory>`_
 which can be read/write from JavaScript and Wasm codes. Allocations are made by
 blocks of 64KB and the number of blocks can be increased later on. From
 JavaScript, the array appears as an
-[ArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer).
+`ArrayBuffer <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer>`_.
 
 On top of this, the RTS allocates larger MBlocks with ``getMBlocks`` in
 ``MBlockAlloc`` and "release" them with ``free``. Currently they are not really
 released but marked as unused and they may be reused for another allocation.
 
-## Memory object
+----------------------------------------------------------------
+Memory object
+----------------------------------------------------------------
 
 The RTS Memory object provides primitives to load and to store data of different
 types into the underlying allocated MBlocks. It simulates (tagged) pointers and
@@ -31,12 +37,15 @@ the Memory object are used. For debugging purpose it is possible to use those
 defined in MemoryTrap object instead: they check the liveness of the pointed
 MBlock and the pointer tag (which must be a data pointer).
 
-## HeapAlloc
+----------------------------------------------------------------
+HeapAlloc
+----------------------------------------------------------------
 
 HeapAlloc object deals with dynamically allocated memory. HeapAlloc
 allocates in two "pools" (groups of MBlocks):
-  - one for unpinned objects smaller than a Block
-  - one for pinned objects or objects larger than a Block
+
+  * one for unpinned objects smaller than a Block
+  * one for pinned objects or objects larger than a Block
 
 When a pool isn't large enough to alloc an object, a new pool large enough is allocated.
 
@@ -45,12 +54,16 @@ We should be able to allocate several groups of Blocks into a group of MBlocks
 with a Block descriptor for each Block. Currently we only use a single Block
 descriptor for each group of MBlocks!
 
-## Garbage Collector
+----------------------------------------------------------------
+Garbage Collector
+----------------------------------------------------------------
 
 The GC object provides garbage collection primitives. It implements a copying
 garbage collector.
 
-## Registers
+----------------------------------------------------------------
+Registers
+----------------------------------------------------------------
 
 WebAssembly doesn't expose any register. Hence STG-machine global registers (Sp,
 Hp, etc.) are mapped to a global static location in memory (in the first
