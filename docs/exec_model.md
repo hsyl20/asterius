@@ -123,30 +123,62 @@ though (hopefully often enough).
 
 We somehow need to map Haskell execution model on JavaScript one.
 
-### Step 0: no multi-threading
-
 The global shared memory is a WebAssembly.Memory object (see
 [memory](memory.md)). Currently it can't be shared between several JavaScript
 contexts.
 
 Asterius only has a single Capability (as in the non-threaded native RTS).
 
+
+### Step 0: synchronous (no scheduling)
+
 Currently Asterius [doesn't support
 multi-threading](https://github.com/tweag/asterius/issues/268). A single TSO is
 executed synchronously until it finishes, blocking any other macro-task.
+Basically the call stack looks like this:
+
+![Basic Asterius execution](exec_basic.svg)
 
 In practice: ``rts_eval*`` functions in ``rts.Exports.mjs`` create a new thread
 (using ``createThread`` function in Asterius.Builtins) and execute it
 synchronously with ``scheduleWaitThread`` defined in Asterius.Builtins.
 
+The user code calls into the RTS code (implicitly or explicitly) but it doesn't
+trigger any thread switch:
+
+![Calling back a primitive in JavaScript](exec_call_rts.svg)
+
+It can also calls into imported FFI code:
+
+![Calling back FFI](exec_call_ffi.svg)
+
+This approach has several drawbacks:
+
+* We can't use any multi-threading primitive, hence no MVar, ``forkIO``, STM,
+  etc.
+
+* Any FFI or RTS call blocks the whole Asterius execution context:
+
+![Blocking calling](exec_call_blocking.svg)
+
+* An Asterius execution context isn't reentrant: we can't have several Haskell
+  codes active at the same time. This is especially noticeable within an FFI
+  call (see below) but it could also happen with asynchronous JS code:
+
+![Non-reentrant RTS](exec_call_not_reentrant.svg)
+
 ### Step 1: cooperative multi-threading
 
-We could introduce a run queue of TSOs. Each time a TSO calls back into the
-scheduler we can schedule another TSO.
+The RTS maintains a list of TSOs in the Capability. The runnable ones are in a
+run-queue. Calling into Haskell code isn't synchronous and returns a Promise.
 
-We can postpone the execution of the next TSO with
-``setTimeout(executeNextTSO,0)`` in order to let the JS engine execute other
-macro-tasks in between. E.g. JSFFI using ``setTimeout``, browser events, etc.
+Each time a TSO calls back into the scheduler, the latter can put the TSO back
+into the Capability queue (or in the run-queue) and may schedule another
+runnable TSO from the run-queue.
+
+The FFI is made reentrant and non-blocking as follows:
+
+![Non-blocking FFI](exec_call_unblock.svg)
 
 ### Step 2 (optional): cooperative multi-threading + Worker
 
