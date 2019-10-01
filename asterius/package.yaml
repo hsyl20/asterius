@@ -319,3 +319,10 @@ tests:
     ghc-options: -threaded -rtsopts
     dependencies:
       - asterius
+
+  diagrams:
+    source-dirs: test
+    main: diagrams.hs
+    ghc-options: -threaded -rtsopts
+    dependencies:
+      - asterius
