@@ -1,0 +1,20 @@
+cabal-version: 1.24
+
+name:           asterius-diagrams
+version:        0.0.1
+license:        BSD3
+build-type:     Simple
+
+executable SquareLimit
+  main-is: SquareLimit.hs
+  ghc-options: -Wall -threaded -rtsopts
+  build-depends:
+        base
+      , text
+      , diagrams
+      , diagrams-svg
+      , diagrams-lib
+      , asterius-prelude
+      , svg-builder
+      , lucid-svg
+  default-language: Haskell2010
